@@ -1,99 +1,122 @@
 import 'package:math_expressions/math_expressions.dart';
 
-/// Pure service class that safely evaluates mathematical expression strings.
+/// Turns the calculator's display expression into a safe, formatted result.
 ///
-/// Using [math_expressions] package instead of dart:math eval so we never
-/// invoke `dart:mirrors` or `eval()` – keeping the app tree-shaking friendly
-/// and avoiding any security concerns from executing arbitrary code.
+/// The UI uses the readable `×` and `÷` symbols, while the parser receives
+/// the ASCII operators it understands. Keeping that conversion in one place
+/// prevents input and evaluation from drifting apart.
 class CalculatorService {
-  // Reuse parser and context across calls to avoid repeated instantiation.
-  // GrammarParser is the recommended non-deprecated parser in math_expressions 2.6+
   final GrammarParser _parser = GrammarParser();
   final ContextModel _context = ContextModel();
 
-  /// Evaluates [expression] and returns the result as a formatted string.
-  ///
-  /// Handles:
-  /// * Division by zero → returns "Cannot divide by zero"
-  /// * Empty or blank input → returns "0"
-  /// * Any parse / evaluation error → returns "Error"
-  /// * Large/overflow numbers → returns "Overflow"
-  ///
-  /// The expression uses '×' and '÷' as display characters; these are
-  /// normalised to '*' and '/' before evaluation.
   String evaluate(String expression) {
+    final String normalised = _normalise(expression).trim();
+    if (normalised.isEmpty) return '0';
+
+    // Live previews are allowed to end with an operator. Evaluate the part
+    // that is complete instead of returning a raw operator as the result.
+    String completeExpression = _removeTrailingOperators(normalised);
+    if (completeExpression.isEmpty || completeExpression == '-') return '0';
+    if (completeExpression.endsWith('.')) {
+      completeExpression = '${completeExpression}0';
+    }
+
     try {
-      if (expression.trim().isEmpty) return '0';
+      final Expression parsed = _parser.parse(completeExpression);
+      final double value = parsed.evaluate(EvaluationType.REAL, _context);
 
-      // Normalise display operators to math_expressions compatible operators
-      String normalised = expression
-          .replaceAll('×', '*')
-          .replaceAll('÷', '/')
-          .replaceAll('−', '-');
+      if (value.isNaN) return 'Invalid expression';
+      if (value.isInfinite) return 'Cannot divide by zero';
+      if (value.abs() > 1e15) return 'Overflow';
 
-      // Guard: expression must not end with an operator
-      if (RegExp(r'[+\-*/%]$').hasMatch(normalised.trim())) {
-        return expression.split('').last; // Keep last digit or partial display
-      }
-
-      final Expression exp = _parser.parse(normalised);
-      final double result = exp.evaluate(EvaluationType.REAL, _context);
-
-      // Handle special floating point values
-      if (result.isNaN) return 'Invalid Expression';
-      if (result.isInfinite) return 'Cannot divide by zero';
-      if (result.abs() > 1e15) return 'Overflow';
-
-      // Format: remove unnecessary .0 for integers
-      if (result == result.truncateToDouble()) {
-        return result.toInt().toString();
-      }
-
-      // Limit decimal places to 10 to avoid floating-point noise
-      String formatted = result.toStringAsFixed(10);
-      // Trim trailing zeros after decimal
-      formatted = formatted.replaceAll(RegExp(r'0+$'), '');
-      formatted = formatted.replaceAll(RegExp(r'\.$'), '');
-      return formatted;
-    } catch (e) {
-      // IntegerDivisionByZeroException is handled via result.isInfinite above.
-      // This catch-all ensures no other exception escapes.
+      return _format(value);
+    } catch (_) {
       return 'Error';
     }
   }
 
-  /// Evaluates percentage: interprets expression as "expression / 100".
-  /// e.g. "50" → "0.5", "200 + 50%" applies 50% of 200.
+  /// Applies calculator-style percentage behaviour to the current expression.
+  ///
+  /// For `200 + 10%`, ten percent is calculated from 200. For multiplication
+  /// and division, `10%` behaves as `0.1`, matching a physical calculator.
   String evaluatePercent(String expression) {
-    try {
-      if (expression.trim().isEmpty) return '0';
+    final String trimmed = expression.trim();
+    if (trimmed.isEmpty) return '0';
 
-      // If there's an operator in the expression, apply % to last operand
-      final RegExp opSplit = RegExp(r'([+\-×÷])');
-      final List<String> parts = expression.split(opSplit);
-
-      if (parts.length >= 2) {
-        final String lastPart = parts.last;
-        final double lastNum = double.parse(lastPart);
-        final String baseExpr = expression.substring(
-          0,
-          expression.length - lastPart.length,
-        );
-        final double base = double.parse(
-          evaluate(baseExpr.substring(0, baseExpr.length - 1)),
-        );
-        final double percent = base * (lastNum / 100);
-
-        // Re-evaluate with the percentage value substituted
-        return evaluate(
-          '$baseExpr${percent.toStringAsFixed(10).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')}',
-        );
-      }
-
-      // Simple case: just divide by 100
-      return evaluate('$expression/100');
-    } catch (_) {
-      return 'Error';
+    final int operatorIndex = _findLastBinaryOperator(trimmed);
+    if (operatorIndex < 0) {
+      return evaluate('$trimmed/100');
     }
+
+    final String leftExpression = trimmed.substring(0, operatorIndex);
+    final String operator = trimmed[operatorIndex];
+    final String rightExpression = trimmed.substring(operatorIndex + 1);
+    final double? right = double.tryParse(_normalise(rightExpression));
+    if (right == null) return 'Error';
+
+    final double? left = double.tryParse(evaluate(leftExpression));
+    if (left == null) return 'Error';
+
+    final double percentage = operator == '+' || operator == '-'
+        ? left * right / 100
+        : right / 100;
+
+    final String replacement = _format(percentage);
+    return evaluate('$leftExpression$operator$replacement');
+  }
+
+  String _normalise(String expression) {
+    return expression
+        .replaceAll('×', '*')
+        .replaceAll('÷', '/')
+        .replaceAll('−', '-')
+        .replaceAll('√', 'sqrt');
+  }
+
+  String _removeTrailingOperators(String expression) {
+    String result = expression;
+    while (result.isNotEmpty && _isBinaryOperator(result[result.length - 1])) {
+      result = result.substring(0, result.length - 1).trimRight();
+    }
+    return result;
+  }
+
+  int _findLastBinaryOperator(String expression) {
+    int depth = 0;
+
+    for (int index = expression.length - 1; index >= 0; index--) {
+      final String character = expression[index];
+      if (character == ')') {
+        depth++;
+        continue;
+      }
+      if (character == '(') {
+        depth--;
+        continue;
+      }
+      if (depth != 0 || !_isBinaryOperator(character)) continue;
+
+      // A minus directly after another operator is a unary sign, not the
+      // operator separating the two values.
+      if (character == '-' &&
+          (index == 0 || _isBinaryOperator(expression[index - 1]))) {
+        continue;
+      }
+      return index;
+    }
+
+    return -1;
+  }
+
+  bool _isBinaryOperator(String character) => '+-*/×÷'.contains(character);
+
+  String _format(double value) {
+    if (value == 0) return '0';
+    if (value == value.truncateToDouble()) return value.toInt().toString();
+
+    String formatted = value.toStringAsFixed(10);
+    formatted = formatted.replaceFirst(RegExp(r'0+$'), '');
+    formatted = formatted.replaceFirst(RegExp(r'\.$'), '');
+    return formatted;
   }
 }

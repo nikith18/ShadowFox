@@ -1,228 +1,116 @@
-# Smart Modern Calculator 🧮
+# SmartCalc
 
-A **production-quality Flutter Android Calculator** featuring a liquid-glass / glassmorphism UI, animated dark/light theme, clean architecture with Provider state management, and comprehensive input validation.
+SmartCalc is a modern Flutter calculator with a responsive glass-style interface, reliable expression evaluation, scientific functions, animated themes, and touch-friendly controls.
 
----
+The application is designed for phones, tablets, desktop windows, and web browsers. Its layout adapts automatically to portrait, landscape, and wide-screen environments.
 
-## Project Overview
+## Highlights
 
-Smart Modern Calculator is a fully-featured, beautifully designed mobile calculator application built with Flutter. It demonstrates professional Flutter development practices including clean architecture, responsive layouts, smooth animations, persistent theme preferences, and robust error handling — making it an ideal portfolio or learning project.
+- Basic arithmetic: addition, subtraction, multiplication, division, percentages, decimals, and sign switching.
+- Scientific mode: sine, cosine, tangent, logarithm, natural logarithm, square root, square, and factorial.
+- Live result preview while entering an expression.
+- Clear, delete, long-press delete, and error-safe input handling.
+- Physical keyboard support for desktop users.
+- Copy-answer action from the result display.
+- Animated dark and light themes with saved preferences.
+- Touch feedback, haptic feedback, tooltips, and accessible labels.
+- Responsive layouts for Android, iOS, Windows, macOS, Linux, and the web.
 
----
+## User experience
 
-## Features
+The interface uses a layered gradient background, translucent cards, rounded calculator keys, animated result transitions, and a focused visual hierarchy. On smaller screens the display is placed above the keypad. On wide or landscape screens the display and keypad are arranged side by side.
 
-| Category | Details |
-|---|---|
-| **Operations** | +, −, ×, ÷, %, decimal, ±, AC, ⌫ |
-| **Display** | Live expression + animated result preview |
-| **UI** | Glassmorphism, gradient background, accent blobs |
-| **Theme** | Animated dark ↔ light toggle, persisted via SharedPreferences |
-| **Responsive** | Portrait, landscape, phone, tablet |
-| **State** | Provider + ChangeNotifier, immutable state |
-| **Validation** | Full input state machine — no crashes |
-| **Animation** | Scale buttons, AnimatedSwitcher display, AnimatedTheme |
-| **Lifecycle** | WidgetsBindingObserver with all 5 states |
+The Scientific control adds advanced functions without overwhelming the compact phone layout. The theme control preserves the selected appearance between launches.
 
----
+## Supported operations
 
-## Screenshots
-
-> _Run the app and take screenshots here._
-> 
-> | Dark Mode | Light Mode | Landscape |
-> |---|---|---|
-> | _(screenshot)_ | _(screenshot)_ | _(screenshot)_ |
-
----
-
-## Folder Structure
-
-```
-lib/
-├── main.dart               # Entry point, MultiProvider, LifecycleObserver
-├── app/
-│   ├── app.dart            # MaterialApp with animated themes
-│   └── theme/
-│       └── app_theme.dart  # Light & Dark ThemeData (Material 3)
-├── constants/
-│   ├── app_colors.dart     # All colour constants
-│   ├── app_sizes.dart      # Spacing, radii, breakpoints
-│   └── app_typography.dart # Font sizes & weights
-├── models/
-│   └── calculator_state.dart   # Immutable state + ButtonType enum
-├── providers/
-│   ├── calculator_provider.dart # State machine + business logic
-│   └── theme_provider.dart      # Dark/light toggle + persistence
-├── services/
-│   ├── calculator_service.dart  # Expression evaluator (math_expressions)
-│   └── preference_service.dart  # SharedPreferences wrapper
-├── screens/
-│   └── calculator_screen.dart   # Main screen, portrait/landscape layouts
-└── widgets/
-    ├── calc_button.dart     # Animated, typed calculator button
-    ├── display_screen.dart  # Expression + result with AnimatedSwitcher
-    ├── glass_card.dart      # BackdropFilter glassmorphism card
-    └── theme_toggle.dart    # Animated sliding toggle for AppBar
-```
-
----
+| Group | Operations |
+| --- | --- |
+| Arithmetic | `+`, `−`, `×`, `÷` |
+| Input | Decimal point, percentage, positive/negative toggle |
+| Controls | Clear all, delete, long-press delete, equals |
+| Scientific | `sin`, `cos`, `tan`, `log`, `ln`, `sqrt`, square, factorial |
 
 ## Architecture
 
-The app uses **Provider + ChangeNotifier** with a **unidirectional data flow**:
+SmartCalc follows a simple layered architecture:
 
-```
-UI Widget
-  └─▶  calls provider method (e.g. onButtonPressed)
-         └─▶  CalculatorProvider updates CalculatorState
-                └─▶  notifyListeners()
-                       └─▶  Consumer/context.watch rebuilds affected widgets
-```
+- **Screens** compose the responsive application layout.
+- **Widgets** provide reusable display, keypad, glass-card, and theme controls.
+- **CalculatorProvider** owns the input state machine and notifies the interface when state changes.
+- **CalculatorService** normalizes display operators, evaluates expressions, formats results, and handles percentages.
+- **PreferenceService** persists the selected theme.
+- **CalculatorState** stores the immutable display and input flags.
 
-Business logic lives exclusively in providers and services — **zero logic in widgets**.
+The UI sends user actions to the provider. The provider updates the state and delegates mathematical evaluation to the service. This keeps presentation, input rules, and calculation logic separate.
 
----
+## Input behavior
 
-## State Management
+The calculator protects users from common input mistakes by:
 
-`CalculatorProvider` maintains an immutable `CalculatorState` with flags:
+- Replacing an operator when another operator is selected.
+- Preventing duplicate decimal points in the current number.
+- Supporting negative numbers at the beginning of an expression.
+- Handling incomplete expressions during live preview.
+- Starting a fresh expression after a completed result when a number is entered.
+- Preserving the scientific-mode selection when the calculator is cleared.
 
-| Flag | Purpose |
-|---|---|
-| `isLastInputOperator` | Prevents consecutive operators |
-| `isLastInputDigit` | Tracks last character type |
-| `hasDot` | Prevents multiple decimals per number |
-| `justEvaluated` | Handles post-`=` input correctly |
+## Error handling
 
-Live result preview: after every digit input, `CalculatorService.evaluate()` is called and `result` is updated immediately.
+Invalid or unsafe expressions never crash the application. The calculation service returns a readable result for each condition:
 
----
+| Condition | Displayed result |
+| --- | --- |
+| Division by zero | Cannot divide by zero |
+| Invalid expression | Invalid expression |
+| Excessively large number | Overflow |
+| Parser failure | Error |
 
-## Input Validation
+Error results are highlighted in the display so they are easy to identify.
 
-The state machine silently rejects:
-- Consecutive operators (`5++3`)
-- Multiple decimals (`1..5`)
-- Leading operators on empty expression
-- Starting with zero padding (`00123`)
+## Responsive design
 
-Delete re-evaluates the `hasDot` flag by scanning the current number segment.
+The calculator uses constraint-based layout rules instead of fixed device dimensions:
 
----
+- Compact screens use a stacked display-and-keypad layout.
+- Wide screens and landscape orientation use a split display-and-keypad layout.
+- The main content has a readable maximum width on large monitors.
+- Key proportions adapt to the available height and width.
+- The keypad remains scrollable when scientific mode needs additional rows.
+- Controls maintain touch-safe hit areas across mobile and desktop devices.
 
-## Error Handling
+## Project organization
 
-`CalculatorService.evaluate()` catches all exceptions and returns user-friendly strings:
-
-| Condition | Display |
-|---|---|
-| Division by zero | `Cannot divide by zero` |
-| Invalid expression | `Invalid Expression` |
-| Number too large | `Overflow` |
-| Any parse error | `Error` |
-
-The result text turns **red** for any error state.
-
----
-
-## Theme System
-
-- `ThemeProvider` holds the `isDarkMode` boolean and calls `notifyListeners()` on toggle.
-- `PreferenceService` persists the preference with `SharedPreferences`.
-- `MaterialApp` uses `theme` / `darkTheme` + `themeMode` with a **400 ms animation**.
-- On first launch, dark mode is the default.
-
----
-
-## Responsive Design
-
-`LayoutBuilder` inside `CalculatorScreen` checks:
-- `constraints.maxWidth > constraints.maxHeight` → **Landscape** layout (display left, buttons right)
-- `constraints.maxWidth >= 600` → **Tablet** layout (constrains max width to 480 dp)
-- Otherwise → **Portrait** layout (display top, buttons bottom)
-
-All buttons use `Expanded` + `AspectRatio` so they fill available space without hardcoded dimensions. `FittedBox` auto-scales button text and result numbers.
-
----
-
-## Animations
-
-| Animation | Widget | Trigger |
-|---|---|---|
-| Button press scale | `AnimatedController` + `ScaleTransition` | `GestureDetector.onTapDown` |
-| Expression fade/slide | `AnimatedSwitcher` | Expression text changes |
-| Result slide/fade | `AnimatedSwitcher` + `SlideTransition` | Result value changes |
-| Theme transition | `MaterialApp.themeAnimationDuration` | Theme toggle |
-| Background gradient | `AnimatedContainer` | Theme toggle |
-| Theme toggle thumb | `AnimatedPositioned` + `AnimatedContainer` | Theme toggle |
-| Theme toggle icon | `AnimatedSwitcher` | Theme toggle |
-
----
-
-## Lifecycle Handling
-
-`_LifecycleWrapperState` implements `WidgetsBindingObserver`:
-
-| State | Meaning |
-|---|---|
-| `resumed` | App is foreground and interactive |
-| `inactive` | App is partially obscured |
-| `paused` | App sent to background |
-| `hidden` | Hidden in multi-window environments |
-| `detached` | Process terminating |
-
----
-
-## How to Use
-
-1. Launch the app.
-2. Enter numbers using the on-screen buttons.
-3. Tap an operator (+, −, ×, ÷).
-4. Enter the next number.
-5. Press **=** to calculate.
-6. Press **AC** to clear everything.
-7. Press **⌫** to delete the last character; **long-press ⌫** to clear all.
-8. Press **±** to toggle positive/negative.
-9. Press **%** to calculate percentage.
-10. Tap the toggle in the top-right corner to switch between Dark and Light modes.
-11. Your chosen theme is automatically saved and restored on next launch.
-
----
-
-## Future Improvements
-
-- 📐 **Scientific Calculator** – sin, cos, tan, log, sqrt, power, factorial
-- 🎙 **Voice Commands** – "Five plus ten equals"
-- 📋 **Calculation History** – Scrollable list of past calculations
-- 💾 **Memory Functions** – M+, M−, MR, MC
-- 🔄 **Unit Converter** – Length, weight, temperature
-- 💱 **Currency Converter** – Live exchange rates
-- 📳 **Haptic Feedback** – Custom vibration patterns per button type
-- 🎨 **Custom Themes** – User-defined accent colours
-- 🌐 **Multi-Language** – Localised number formats
-
----
+| Location | Responsibility |
+| --- | --- |
+| `lib/main.dart` | Application startup and lifecycle observer |
+| `lib/app` | Material application configuration and themes |
+| `lib/constants` | Shared colors, spacing, sizing, and typography |
+| `lib/models` | Immutable calculator state and button types |
+| `lib/providers` | Calculator and theme state management |
+| `lib/services` | Expression evaluation and preference persistence |
+| `lib/screens` | Main responsive calculator screen |
+| `lib/widgets` | Reusable calculator interface components |
+| `test` | Calculation and interaction tests |
 
 ## Dependencies
 
 | Package | Purpose |
-|---|---|
-| `provider ^6.1.2` | State management |
-| `shared_preferences ^2.3.2` | Theme persistence |
-| `math_expressions ^2.6.0` | Safe expression evaluation |
+| --- | --- |
+| Provider | State management with `ChangeNotifier` |
+| Shared Preferences | Persistent theme selection |
+| Math Expressions | Safe mathematical expression parsing and evaluation |
+| Flutter Material and Cupertino icons | Cross-platform interface icons |
 
----
+## Quality coverage
 
-## Learning Concepts Demonstrated
+The test suite covers arithmetic precedence, display operators, incomplete expressions, percentages, scientific functions, provider state transitions, decimal and delete behavior, sign switching, and real calculator button taps.
 
-- **Flutter Widgets** – Custom reusable widgets, StatefulWidget lifecycle
-- **Responsive Layouts** – `LayoutBuilder`, `Expanded`, `AspectRatio`, `FittedBox`
-- **State Management** – Provider, ChangeNotifier, immutable state pattern
-- **Event Handling** – GestureDetector, button dispatch, long-press
-- **Animation** – AnimationController, AnimatedSwitcher, AnimatedContainer, ScaleTransition
-- **Theme Management** – MaterialApp light/dark themes, animated transitions
-- **Error Handling** – Try-catch, user-friendly messages, defensive UI rendering
-- **Lifecycle Management** – WidgetsBindingObserver, all lifecycle states
-- **Clean Architecture** – Separated concerns: models, services, providers, widgets
-- **Professional UI** – Glassmorphism, gradient backgrounds, micro-interactions
+## Possible future enhancements
+
+- Calculation history.
+- Memory functions.
+- Unit conversion.
+- Custom accent themes.
+- Localized number formats.
+- Optional voice-input interface.

@@ -2,19 +2,12 @@ import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_sizes.dart';
 
-/// Provides fully configured [ThemeData] for both light and dark modes.
-/// Material Design 3 is used throughout for modern, expressive UI.
 abstract class AppTheme {
-  // ──────────────────────────────────────────────
-  //  DARK THEME
-  // ──────────────────────────────────────────────
-
   static ThemeData get dark {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
 
-      // Seed color drives the entire M3 color system
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.accentPurple,
         brightness: Brightness.dark,
@@ -23,7 +16,6 @@ abstract class AppTheme {
 
       scaffoldBackgroundColor: Colors.transparent,
 
-      // AppBar styling
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -37,18 +29,15 @@ abstract class AppTheme {
         iconTheme: IconThemeData(color: AppColors.darkTextPrimary),
       ),
 
-      // Text theme
       textTheme: const TextTheme(
         displayLarge: TextStyle(color: AppColors.darkTextPrimary),
         bodyLarge: TextStyle(color: AppColors.darkTextPrimary),
         bodyMedium: TextStyle(color: AppColors.darkTextSecondary),
       ),
 
-      // Ripple / Ink splash uses glass-tinted white
       splashColor: Colors.white12,
       highlightColor: Colors.white10,
 
-      // Shape system – rounded corners everywhere
       cardTheme: CardThemeData(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusLG),
@@ -56,10 +45,6 @@ abstract class AppTheme {
       ),
     );
   }
-
-  // ──────────────────────────────────────────────
-  //  LIGHT THEME
-  // ──────────────────────────────────────────────
 
   static ThemeData get light {
     return ThemeData(

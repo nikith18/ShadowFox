@@ -2,231 +2,237 @@ import 'package:flutter/foundation.dart';
 import '../models/calculator_state.dart';
 import '../services/calculator_service.dart';
 
-/// The heart of the Smart Modern Calculator.
-///
-/// [CalculatorProvider] implements a **state machine** for user input so that
-/// invalid sequences (consecutive operators, multiple decimals, leading zeros)
-/// are silently rejected rather than causing crashes or confusing output.
-///
-/// State flags:
-///   • [state.isLastInputOperator]  – last token was an operator
-///   • [state.isLastInputDigit]     – last token was a digit/decimal
-///   • [state.hasDot]               – current number segment has a decimal
-///   • [state.justEvaluated]        – user just pressed "="
-///
-/// This mirrors an Android ViewModel in the clean-architecture sense:
-/// the provider holds state + business logic; widgets only observe and dispatch.
 class CalculatorProvider extends ChangeNotifier {
+  static const String backspace = '⌫';
+  static const String plusMinus = '±';
+  static const String multiply = '×';
+  static const String divide = '÷';
+
+  static const Set<String> scientificFunctions = {
+    'sin',
+    'cos',
+    'tan',
+    'log',
+    'ln',
+    'sqrt',
+    'pow',
+    'factorial',
+  };
+
   final CalculatorService _service;
 
   CalculatorProvider({required CalculatorService calculatorService})
     : _service = calculatorService;
 
-  // The single source of truth for all calculator UI state.
   CalculatorState _state = const CalculatorState();
 
-  /// Exposes the current immutable state snapshot.
   CalculatorState get state => _state;
 
-  // ──────────────────────────────────────────────
-  //  PUBLIC API – called by the UI layer
-  // ──────────────────────────────────────────────
-
-  /// Main entry point: dispatches button presses to the correct handler.
   void onButtonPressed(String value) {
-    if (value == 'AC') {
-      _handleClear();
-    } else if (value == '⌫') {
-      _handleDelete();
-    } else if (value == '=') {
-      _handleEquals();
-    } else if (value == '±') {
-      _handleToggleSign();
-    } else if (value == '%') {
-      _handlePercent();
-    } else if (_isOperator(value)) {
-      _handleOperator(value);
-    } else if (value == '.') {
-      _handleDecimal();
-    } else {
-      _handleDigit(value);
+    switch (value) {
+      case 'AC':
+        _handleClear();
+      case backspace:
+        _handleDelete();
+      case '=':
+        _handleEquals();
+      case plusMinus:
+        _handleToggleSign();
+      case '%':
+        _handlePercent();
+      case 'sin':
+      case 'cos':
+      case 'tan':
+      case 'log':
+      case 'ln':
+      case 'sqrt':
+      case 'pow':
+      case 'factorial':
+        _handleScientific(value);
+      case '+':
+      case '-':
+      case multiply:
+      case divide:
+        _handleOperator(value);
+      case '.':
+        _handleDecimal();
+      default:
+        if (RegExp(r'^\d$').hasMatch(value)) _handleDigit(value);
     }
   }
 
-  /// Long-press on delete clears everything (convenience shortcut).
   void onDeleteLongPress() => _handleClear();
 
-  // ──────────────────────────────────────────────
-  //  INPUT HANDLERS
-  // ──────────────────────────────────────────────
-
   void _handleDigit(String digit) {
-    String newExpr;
+    final bool startingNewExpression = _state.justEvaluated;
+    final String currentSegment = _currentSegment(_state.expression);
 
-    if (_state.justEvaluated) {
-      // Starting fresh after an evaluation: replace expression with new digit
-      newExpr = digit;
-    } else {
-      // Prevent consecutive leading zeros like "00123"
-      if (digit == '0' && _state.expression == '0') return;
-      newExpr = _state.expression + digit;
+    if (!startingNewExpression && digit == '0' && currentSegment == '0') {
+      return;
     }
 
+    final String newExpression = startingNewExpression
+        ? digit
+        : _state.expression + digit;
+
     _state = _state.copyWith(
-      expression: newExpr,
+      expression: newExpression,
+      result: newExpression,
       isLastInputOperator: false,
       isLastInputDigit: true,
+      hasDot: _currentSegmentHasDot(newExpression),
       justEvaluated: false,
-      // hasDot stays same; it's only reset in _handleOperator / _handleClear
     );
 
     _computeLiveResult();
   }
 
-  void _handleOperator(String op) {
+  void _handleOperator(String operator) {
     if (_state.expression.isEmpty) {
-      // Don't allow an expression to start with an operator (except minus for
-      // unary negation – future enhancement; for now just ignore).
+      // A leading minus is useful for negative numbers; the other operators
+      // have no meaningful left-hand side yet.
+      if (operator != '-') return;
+      _state = _state.copyWith(
+        expression: '-',
+        result: '0',
+        isLastInputOperator: true,
+        isLastInputDigit: false,
+        hasDot: false,
+        justEvaluated: false,
+      );
+      notifyListeners();
       return;
     }
 
-    String newExpr;
+    if (_state.expression == '-' && _state.isLastInputOperator) return;
+    if (_state.justEvaluated && !_isNumeric(_state.result)) return;
 
-    if (_state.justEvaluated) {
-      // Continue with the result of the previous evaluation
-      newExpr = _state.result + op;
+    String newExpression;
+    if (_state.justEvaluated && _isNumeric(_state.result)) {
+      newExpression = '${_state.result}$operator';
     } else if (_state.isLastInputOperator) {
-      // Replace the last operator instead of stacking them (e.g. "5+" then "×" → "5×")
-      newExpr =
-          _state.expression.substring(0, _state.expression.length - 1) + op;
+      newExpression =
+          '${_state.expression.substring(0, _state.expression.length - 1)}$operator';
     } else {
-      newExpr = _state.expression + op;
+      newExpression = _state.expression + operator;
     }
 
     _state = _state.copyWith(
-      expression: newExpr,
+      expression: newExpression,
       isLastInputOperator: true,
       isLastInputDigit: false,
-      hasDot: false, // New operand starts; reset decimal flag
+      hasDot: false,
       justEvaluated: false,
     );
-
-    // Don't update live result here – the expression ending in an operator
-    // is not a valid evaluable expression.
+    _computeLiveResult();
   }
 
   void _handleDecimal() {
-    if (_state.hasDot) return; // Already have a decimal in this number segment
+    if (_state.hasDot && !_state.justEvaluated) return;
 
-    String newExpr;
-
+    final String newExpression;
     if (_state.expression.isEmpty ||
         _state.isLastInputOperator ||
         _state.justEvaluated) {
-      // Auto-prefix "0." if decimal is first character or comes after operator
-      final String prefix = _state.justEvaluated ? '' : _state.expression;
-      newExpr = '${prefix}0.';
+      newExpression = '${_state.justEvaluated ? '' : _state.expression}0.';
     } else {
-      newExpr = '${_state.expression}.';
+      newExpression = '${_state.expression}.';
     }
 
     _state = _state.copyWith(
-      expression: newExpr,
+      expression: newExpression,
+      result: newExpression,
       hasDot: true,
       isLastInputOperator: false,
       isLastInputDigit: false,
       justEvaluated: false,
     );
+    _computeLiveResult();
   }
 
   void _handleEquals() {
     if (_state.expression.isEmpty || _state.isLastInputOperator) return;
 
     final String result = _service.evaluate(_state.expression);
-
     _state = _state.copyWith(
       result: result,
       isLastInputOperator: false,
       isLastInputDigit: false,
       hasDot: false,
       justEvaluated: true,
-      // Keep expression visible so user can see what they evaluated
     );
-
     notifyListeners();
   }
 
   void _handleClear() {
-    _state = const CalculatorState();
+    final bool scientificMode = _state.isScientificMode;
+    _state = CalculatorState(isScientificMode: scientificMode);
     notifyListeners();
   }
 
   void _handleDelete() {
-    final String expr = _state.expression;
-    if (expr.isEmpty) return;
+    if (_state.expression.isEmpty) return;
 
-    final String newExpr = expr.substring(0, expr.length - 1);
-
-    // Re-evaluate flags from the new trimmed expression
-    final bool lastIsOp =
-        newExpr.isNotEmpty && _isOperator(newExpr[newExpr.length - 1]);
-    final bool lastIsDigitChar =
-        newExpr.isNotEmpty &&
-        RegExp(r'[0-9]').hasMatch(newExpr[newExpr.length - 1]);
-
-    // Re-detect whether a dot exists in the current number segment.
-    // "Current segment" is the substring after the last operator.
-    final bool dotExists = _currentSegmentHasDot(newExpr);
+    final String newExpression = _state.expression.substring(
+      0,
+      _state.expression.length - 1,
+    );
+    final bool lastIsOperator =
+        newExpression.isNotEmpty &&
+        _isOperator(newExpression[newExpression.length - 1]);
 
     _state = _state.copyWith(
-      expression: newExpr,
-      result: newExpr.isEmpty ? '0' : _state.result,
-      isLastInputOperator: lastIsOp,
-      isLastInputDigit: lastIsDigitChar,
-      hasDot: dotExists,
+      expression: newExpression,
+      result: newExpression.isEmpty ? '0' : _state.result,
+      isLastInputOperator: lastIsOperator,
+      isLastInputDigit: !lastIsOperator && newExpression.isNotEmpty,
+      hasDot: _currentSegmentHasDot(newExpression),
       justEvaluated: false,
     );
 
-    if (newExpr.isNotEmpty && !lastIsOp) {
-      _computeLiveResult();
-    } else {
+    if (newExpression.isEmpty || lastIsOperator) {
       notifyListeners();
+    } else {
+      _computeLiveResult();
     }
   }
 
   void _handleToggleSign() {
-    if (_state.expression.isEmpty) return;
-
-    // Find the start of the last number segment
-    int lastOpIndex = -1;
-    for (int i = _state.expression.length - 1; i >= 0; i--) {
-      if (_isOperator(_state.expression[i]) && i != 0) {
-        lastOpIndex = i;
-        break;
-      }
+    if (_state.justEvaluated && _isNumeric(_state.result)) {
+      final String signedResult = _state.result.startsWith('-')
+          ? _state.result.substring(1)
+          : '-${_state.result}';
+      _state = _state.copyWith(
+        expression: signedResult,
+        result: signedResult,
+        justEvaluated: false,
+        isLastInputDigit: true,
+      );
+      _computeLiveResult();
+      return;
     }
 
-    final String beforeSegment = lastOpIndex >= 0
-        ? _state.expression.substring(0, lastOpIndex + 1)
-        : '';
-    final String segment = lastOpIndex >= 0
-        ? _state.expression.substring(lastOpIndex + 1)
-        : _state.expression;
+    if (_state.expression.isEmpty || _state.expression == '-') return;
+
+    final int operatorIndex = _findLastBinaryOperator(_state.expression);
+    final String beforeSegment = operatorIndex < 0
+        ? ''
+        : _state.expression.substring(0, operatorIndex + 1);
+    final String segment = operatorIndex < 0
+        ? _state.expression
+        : _state.expression.substring(operatorIndex + 1);
 
     if (segment.isEmpty) return;
-
-    String newSegment;
-    if (segment.startsWith('-')) {
-      newSegment = segment.substring(1); // Remove leading minus
-    } else {
-      newSegment = '-$segment'; // Add leading minus
-    }
+    final String newSegment = segment.startsWith('-')
+        ? segment.substring(1)
+        : '-$segment';
 
     _state = _state.copyWith(
       expression: beforeSegment + newSegment,
       justEvaluated: false,
+      isLastInputOperator: false,
+      isLastInputDigit: true,
     );
-
     _computeLiveResult();
   }
 
@@ -234,57 +240,124 @@ class CalculatorProvider extends ChangeNotifier {
     if (_state.expression.isEmpty || _state.isLastInputOperator) return;
 
     final String result = _service.evaluatePercent(_state.expression);
-
     _state = _state.copyWith(
+      expression: result,
       result: result,
       isLastInputOperator: false,
-      isLastInputDigit: false,
+      isLastInputDigit: true,
       hasDot: result.contains('.'),
       justEvaluated: true,
     );
-
     notifyListeners();
   }
 
-  // ──────────────────────────────────────────────
-  //  HELPERS
-  // ──────────────────────────────────────────────
-
-  /// Computes a live preview result and notifies listeners.
-  /// Called after every digit/decimal input so the result area updates
-  /// in real time without requiring the user to press "=".
   void _computeLiveResult() {
     final String liveResult = _service.evaluate(_state.expression);
     _state = _state.copyWith(result: liveResult);
     notifyListeners();
   }
 
-  bool _isOperator(String ch) => '+-×÷'.contains(ch);
-
-  /// Finds the last operator position in [expr] and checks whether the
-  /// current number segment (after the last operator) contains a decimal point.
-  bool _currentSegmentHasDot(String expr) {
-    if (expr.isEmpty) return false;
-    // Walk backwards to find the start of the current segment
-    for (int i = expr.length - 1; i >= 0; i--) {
-      if (_isOperator(expr[i])) {
-        return expr.substring(i + 1).contains('.');
-      }
-    }
-    return expr.contains('.');
+  void toggleScientificMode() {
+    _state = _state.copyWith(isScientificMode: !_state.isScientificMode);
+    notifyListeners();
   }
 
-  // ──────────────────────────────────────────────
-  //  FUTURE: Scientific Mode
-  // ──────────────────────────────────────────────
-  // TODO(future): Add a `isScientificMode` flag and expose:
-  //   sin(), cos(), tan(), log(), ln(), sqrt(), pow(), factorial()
-  // These operations should be routed here as named button values
-  // and evaluated via CalculatorService.evaluate() after inserting
-  // the appropriate function prefix (e.g. "sin(" + segment + ")").
+  void _handleScientific(String function) {
+    String expression = _state.expression;
+    if (_state.justEvaluated && _isNumeric(_state.result)) {
+      expression = _state.result;
+    }
+    if (expression.isEmpty || expression == '-') return;
 
-  // TODO(future): Voice input hook
-  // The `onVoiceInput(String rawText)` method should parse natural language
-  // like "five plus ten" and convert to an expression string before calling
-  // the existing state machine handlers.
+    final int operatorIndex = _findLastBinaryOperator(expression);
+    final String beforeSegment = operatorIndex < 0
+        ? ''
+        : expression.substring(0, operatorIndex + 1);
+    final String segment = operatorIndex < 0
+        ? expression
+        : expression.substring(operatorIndex + 1);
+
+    if (segment.isEmpty || segment == '-') return;
+
+    final String transformedSegment = switch (function) {
+      'factorial' => '$segment!',
+      'pow' => '$segment^2',
+      'sqrt' => 'sqrt($segment)',
+      _ => '$function($segment)',
+    };
+
+    _state = _state.copyWith(
+      expression: beforeSegment + transformedSegment,
+      justEvaluated: false,
+      isLastInputOperator: false,
+      isLastInputDigit: true,
+      hasDot: false,
+    );
+    _computeLiveResult();
+  }
+
+  /// Converts common spoken calculator phrases into button presses.
+  void onVoiceInput(String rawText) {
+    final Map<String, String> replacements = {
+      'multiplied by': multiply,
+      'divided by': divide,
+      'plus': '+',
+      'add': '+',
+      'minus': '-',
+      'subtract': '-',
+      'times': multiply,
+      'over': divide,
+      'equals': '=',
+      'zero': '0',
+      'one': '1',
+      'two': '2',
+      'three': '3',
+      'four': '4',
+      'five': '5',
+      'six': '6',
+      'seven': '7',
+      'eight': '8',
+      'nine': '9',
+      'ten': '10',
+    };
+
+    String parsed = rawText.toLowerCase();
+    for (final MapEntry<String, String> replacement in replacements.entries) {
+      parsed = parsed.replaceAll(replacement.key, replacement.value);
+    }
+
+    _handleClear();
+    for (final String character
+        in parsed.replaceAll(RegExp(r'\s+'), '').split('')) {
+      onButtonPressed(character);
+    }
+  }
+
+  String _currentSegment(String expression) {
+    if (expression.isEmpty) return '';
+    final int operatorIndex = _findLastBinaryOperator(expression);
+    return operatorIndex < 0
+        ? expression
+        : expression.substring(operatorIndex + 1);
+  }
+
+  bool _currentSegmentHasDot(String expression) =>
+      _currentSegment(expression).contains('.');
+
+  int _findLastBinaryOperator(String expression) {
+    for (int index = expression.length - 1; index >= 0; index--) {
+      final String character = expression[index];
+      if (!_isOperator(character)) continue;
+      if (character == '-' &&
+          (index == 0 || _isOperator(expression[index - 1]))) {
+        continue;
+      }
+      return index;
+    }
+    return -1;
+  }
+
+  bool _isOperator(String character) => '+-×÷'.contains(character);
+
+  bool _isNumeric(String value) => double.tryParse(value) != null;
 }

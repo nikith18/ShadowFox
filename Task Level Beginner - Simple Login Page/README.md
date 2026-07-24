@@ -8,7 +8,6 @@ A **Flutter** application showcasing modern mobile development patterns: Firebas
 
 | Feature | Details |
 |---|---|
-| **Firebase Authentication** | Email/password sign-in via `FirebaseAuth` with graceful offline fallback |
 | **Google Sign-In** | Full OAuth2 flow → Firebase credential |
 | **Biometric Authentication** | Fingerprint / Face ID / PIN via `local_auth` |
 | **SharedPreferences Persistence** | Remember Me saves username across app restarts |
@@ -78,26 +77,10 @@ Email:    student@demo.com
 Password: 123456
 ```
 
-> Works **without** a Firebase project. The app auto-detects missing `google-services.json` and falls back to demo mode gracefully.
-
----
-
-## 🔥 Firebase Setup (Optional — Enables Real Auth)
-
-1. Go to [console.firebase.google.com](https://console.firebase.google.com) → create a project
-2. Enable **Email/Password** and **Google** sign-in methods under Authentication
-3. Download `google-services.json` → place at `android/app/google-services.json`
-4. Run `flutter pub get && flutter run`
-
-> Without this file the app runs in **offline/demo mode** — no crash, no error message to users.
-
----
-
 ## 🏗️ Architecture
 
 ```
 SmartLoginApp (StatefulWidget — root)
-│   Firebase.initializeApp() ← async, try/catch offline-safe
 │   loadPersistedSession()   ← SharedPreferences + biometric check
 │   Holds LoginViewModel (survives rotation & navigation)
 │   Listens to ViewModel for dark-mode rebuild
@@ -215,13 +198,6 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-
-  # Firebase
-  firebase_core: ^3.x       # Bootstrap Firebase SDK
-  firebase_auth: ^5.x       # Email/password + Google credential auth
-
-  # Google Sign-In
-  google_sign_in: ^6.x      # OAuth2 Google identity flow
 
   # Persistence
   shared_preferences: ^2.x  # Remember-me + username storage

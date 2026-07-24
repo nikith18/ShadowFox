@@ -1,0 +1,16 @@
+﻿Analyzing lib...
+
+   info - screens\login_screen.dart:105:28 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\login_screen.dart:105:32 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\login_screen.dart:106:41 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\login_screen.dart:136:20 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\login_screen.dart:500:63 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\login_screen.dart:500:67 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\login_screen.dart:508:61 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\register_screen.dart:151:20 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\welcome_screen.dart:74:26 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\welcome_screen.dart:74:30 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\welcome_screen.dart:75:39 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - screens\welcome_screen.dart:86:20 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+
+12 issues found.

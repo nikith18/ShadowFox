@@ -11,16 +11,15 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # UI Icons
+  
   cupertino_icons: ^1.0.8
 
-  # State Management - Provider pattern for clean architecture
   provider: ^6.1.2
 
-  # Persistent Storage - Save theme preference across app restarts
+
   shared_preferences: ^2.3.2
 
-  # Math Expression Evaluation - Safe parsing of mathematical expressions
+
   math_expressions: ^2.6.0
 
 dev_dependencies:
@@ -31,10 +30,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Assets configuration for future image/icon support
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
 
-  # Custom Google Fonts are loaded via HTTP; no local font files needed
-  # for this project (uses system fonts + Material icons).

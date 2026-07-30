@@ -1,4 +1,4 @@
-name: Weather app
+name: Weather App
 description: "A comprehensive Weather App with real-time forecasts, Glassmorphism UI, and dark/light themes. Powered by Open-Meteo (no API key required)."
 publish_to: 'none'
 

@@ -1,4 +1,4 @@
-name: my_app
+name: Calculator App
 description: "Smart Modern Calculator - A production-quality Flutter calculator with glassmorphism UI, dark/light theme, animations, and clean architecture."
 publish_to: 'none'
 

@@ -308,12 +308,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   children: [
                     _statChip(
                         context,
-                        '${activity.averageDailyCalories.toStringAsFixed(0)}',
+                        activity.averageDailyCalories.toStringAsFixed(0),
                         'kcal / day',
                         AppColors.calories),
                     _statChip(
                         context,
-                        '${activity.totalDistanceKm.toStringAsFixed(0)}',
+                        activity.totalDistanceKm.toStringAsFixed(0),
                         'km Total',
                         AppColors.distance),
                     _statChip(context, '${activity.activeDaysCount}',
@@ -491,7 +491,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         Expanded(
             child: _statChip(
                 context,
-                '${activity.averageDailySteps.toStringAsFixed(0)}',
+                activity.averageDailySteps.toStringAsFixed(0),
                 'Avg Steps',
                 AppColors.steps)),
         const SizedBox(width: 10),

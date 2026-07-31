@@ -1,4 +1,4 @@
-# ShadowFox Weather App
+# Weather App
 
 ![Cover Image](https://images.unsplash.com/photo-1592210454359-9043f067919b?w=800&q=80)  
 *A comprehensive Flutter project demonstrating clean architecture, API integration, and responsive glassmorphism UI.*

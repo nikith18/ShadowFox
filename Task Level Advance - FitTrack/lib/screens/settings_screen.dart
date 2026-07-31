@@ -148,17 +148,17 @@ class SettingsScreen extends StatelessWidget {
 
               // ── App Info ──
               _sectionHeader(context, 'ℹ️ About'),
-              GlassCard(
+              const GlassCard(
                 child: Column(
                   children: [
-                    const ListTile(
+                    ListTile(
                       leading:
                           Icon(Icons.fitness_center, color: AppColors.primary),
                       title: Text('FitTrack Pro'),
                       subtitle: Text('Version 1.0.0'),
                     ),
-                    const Divider(height: 1),
-                    const ListTile(
+                    Divider(height: 1),
+                    ListTile(
                       leading: Icon(Icons.code, color: AppColors.accent),
                       title: Text('Built with Flutter'),
                       subtitle: Text('Material 3 · Provider · fl_chart'),
@@ -196,7 +196,7 @@ class SettingsScreen extends StatelessWidget {
     return SwitchListTile(
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
       secondary: Icon(icon, color: AppColors.primary),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),

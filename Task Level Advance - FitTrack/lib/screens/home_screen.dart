@@ -157,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen>
             child: Container(
               width: 46,
               height: 46,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: AppColors.primaryGradient,
               ),
@@ -376,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               _summaryChip(
                   context,
-                  '${activity.averageDailySteps.toStringAsFixed(0)}',
+                  activity.averageDailySteps.toStringAsFixed(0),
                   'Avg Steps'),
               _summaryChip(
                   context,

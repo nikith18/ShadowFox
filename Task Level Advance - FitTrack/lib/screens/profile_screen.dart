@@ -130,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Container(
                   width: 80,
                   height: 80,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: AppColors.primaryGradient,
                   ),
@@ -313,7 +313,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               // Gender
               DropdownButtonFormField<String>(
-                value: _selectedGender,
+                initialValue: _selectedGender,
                 decoration: const InputDecoration(labelText: 'Gender'),
                 items: ['not specified', 'male', 'female', 'other']
                     .map((g) => DropdownMenuItem(value: g, child: Text(g)))
@@ -323,7 +323,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 12),
               // Fitness level
               DropdownButtonFormField<String>(
-                value: _selectedLevel,
+                initialValue: _selectedLevel,
                 decoration: const InputDecoration(labelText: 'Fitness Level'),
                 items: ['beginner', 'intermediate', 'advanced']
                     .map((l) => DropdownMenuItem(value: l, child: Text(l)))

@@ -11,7 +11,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         secondary: AppColors.accent,
         surface: AppColors.darkSurface,
@@ -80,11 +80,11 @@ class AppTheme {
         fillColor: AppColors.darkCard.withValues(alpha: 0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.glassBorderDark),
+          borderSide: const BorderSide(color: AppColors.glassBorderDark),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.glassBorderDark),
+          borderSide: const BorderSide(color: AppColors.glassBorderDark),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -108,7 +108,7 @@ class AppTheme {
         backgroundColor: AppColors.darkCard.withValues(alpha: 0.5),
         selectedColor: AppColors.primary.withValues(alpha: 0.3),
         labelStyle: const TextStyle(color: Colors.white),
-        side: BorderSide(color: AppColors.glassBorderDark),
+        side: const BorderSide(color: AppColors.glassBorderDark),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
@@ -118,7 +118,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.accent,
         surface: AppColors.lightSurface,
@@ -129,7 +129,7 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: AppColors.lightBackground,
       textTheme: GoogleFonts.outfitTextTheme(
-        TextTheme(
+        const TextTheme(
           displayLarge: TextStyle(
               color: AppColors.textLight, fontWeight: FontWeight.bold),
           displayMedium: TextStyle(
@@ -170,7 +170,7 @@ class AppTheme {
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
-        iconTheme: IconThemeData(color: AppColors.textLight),
+        iconTheme: const IconThemeData(color: AppColors.textLight),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white.withValues(alpha: 0.9),
@@ -203,8 +203,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
-        labelStyle: TextStyle(color: AppColors.textLightSecondary),
-        hintStyle: TextStyle(color: AppColors.textLightSecondary),
+        labelStyle: const TextStyle(color: AppColors.textLightSecondary),
+        hintStyle: const TextStyle(color: AppColors.textLightSecondary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -220,7 +220,7 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: Colors.white.withValues(alpha: 0.8),
         selectedColor: AppColors.primary.withValues(alpha: 0.15),
-        labelStyle: TextStyle(color: AppColors.textLight),
+        labelStyle: const TextStyle(color: AppColors.textLight),
         side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),

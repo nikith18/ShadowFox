@@ -102,13 +102,13 @@ class ActivityScreen extends StatelessWidget {
                     _metricCard(
                         context,
                         '🔥 Calories',
-                        '${activity.todayCalories.toStringAsFixed(0)}',
+                        activity.todayCalories.toStringAsFixed(0),
                         'kcal',
                         AppColors.calories),
                     _metricCard(
                         context,
                         '📍 Distance',
-                        '${activity.todayDistanceKm.toStringAsFixed(2)}',
+                        activity.todayDistanceKm.toStringAsFixed(2),
                         'km',
                         AppColors.distance),
                     _metricCard(
